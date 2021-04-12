@@ -1,2 +1,2 @@
 # learning-glsl
-ayo
+creating some shaders for use in love2D!
