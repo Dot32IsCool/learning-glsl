@@ -1,3 +1,5 @@
+local shaders = {}
+
 function love.load()
 	require("Intro/intro")
 	introInitialise("Games")
@@ -18,34 +20,21 @@ function love.load()
 	car.dirNormalised = math.fmod(car.dir, 360)
 	car.vDir = -90
 
-	skidmark = {}
+	shaders.selected = 2
+	shaders.fileName = love.filesystem.getDirectoryItems("shaders")
+	shaders.out = {}
+	shaders.read = {}
+	shaders.draw = {}
+	for i=1, #shaders.fileName do
+		shaders.out[i] = require("shaders."..shaders.fileName[i])
+
+		shaders.read[i] = love.filesystem.read("shaders/"..shaders.fileName[i].."/fs.glsl")
+		shaders.draw[i] = love.graphics.newShader(shaders.read[i])
+		shaders.draw[i]:send("size",{love.graphics.getWidth()*love.graphics.getDPIScale(), love.graphics.getHeight()*love.graphics.getDPIScale()}) 
+	end
+
 	local sh = love.filesystem.read('vignette.frag')--love.filesystem.read('lights.frag')
 	myShader = love.graphics.newShader(sh)
-	-- myShader = love.graphics.newShader[[
-	-- 	#define NUM_LIGHTS 32
-
-	-- 	struct Light {
-	-- 		vec2 position;
-	-- 		vec3 colourr;
-	-- 		float power;
-	-- 	};
-	-- 	extern vec2 size;
-	-- 	extern vec2 Lightt lights[NUM_LIGHTS];
-	-- 	extern int num_lights;
-
-	-- 	const float constant = 1.0;
-	-- 	const float linier = 0.09;
-	-- 	const floar quadratic = 0.032;
-
- --    vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords ){
-		
-	-- 	vec4 pixel = Texel(texture, texture_coords);
- --    vec2 scale = screen_coords / size;
-    
- --    return pixel*colour;
-	-- }
- --  ]]
-  myShader:send("size",{love.graphics.getWidth()*love.graphics.getDPIScale(), love.graphics.getHeight()*love.graphics.getDPIScale()}) 
 end
 
 function love.update(dt)
@@ -98,27 +87,8 @@ function love.update(dt)
 end
 
 function love.draw()
-	love.graphics.setShader(myShader)
-
-	-- myShader:send("num_lights", 2)    
-
- --  myShader:send("lights[0].position", {
- --      car.x*love.graphics.getDPIScale(),
- --      car.y*love.graphics.getDPIScale()
- --  })
-	-- myShader:send("lights[0].colourr", {
- --      0.9, 0.8, 0.7
- --  })
-	-- myShader:send("lights[0].power", 50)
-
-	-- myShader:send("lights[1].position", {
- --      love.mouse.getX()*love.graphics.getDPIScale(),
- --      love.mouse.getY()*love.graphics.getDPIScale()
- --  })
-	-- myShader:send("lights[1].colourr", {
- --      1.0, 0.5, 0.2
- --  })
-	-- myShader:send("lights[1].power", 300)
+	love.graphics.setShader(shaders.draw[shaders.selected])
+	shaders.out[shaders.selected]:send(shaders.draw[shaders.selected])
 
 	love.graphics.setColour(50/100, 69/100, 45/100)
 	love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
@@ -129,12 +99,16 @@ function love.draw()
 	love.graphics.draw(car.image, car.x, car.y, (car.dirNormalised+90)/180*math.pi, 0.7, 0.7, car.image:getWidth()/2, car.image:getHeight()/2)
 	love.graphics.setColour(0,0,1,0.2)
 	--love.graphics.draw(car.image, car.x, car.y, (car.vDir+90)/180*math.pi, 0.7, 0.7, car.image:getWidth()/2, car.image:getHeight()/2)
-	--love.graphics.setColour(1,1,1,1)
-	--love.graphics.circle("fill", car.x, car.y, 18)
+	-- love.graphics.setColour(1,1,1,1)
+	-- love.graphics.circle("fill", car.x, car.y, 18)
 
 	love.graphics.setColour(0,0,0,0.25)
 	love.graphics.print(math.floor(car.speed), 10, 10)
 	love.graphics.print("[WASD][R]", 10, love.graphics.getHeight()-screen.font:getHeight()-10)
+	--love.graphics.print(varToString(shaders), 10, 50)
+
+	love.graphics.circle("fill", shaders.out[1].lights[1].position[1](), 0, 5)
+	love.graphics.print(shaders.selected, love.graphics.getWidth()-screen.font:getWidth(shaders.selected) - 10, love.graphics.getHeight()-screen.font:getHeight()-10)
 	
 	
 	love.graphics.setColour(1,0,0,0.25)
@@ -145,4 +119,49 @@ function love.draw()
 	love.graphics.setShader()
 
 	introDraw()
+end
+
+function varToString(var) -- thank you so much HugoBDesigner! (https://love2d.org/forums/viewtopic.php?t=82877)
+  if type(var) == "string" then
+    return "\"" .. var .. "\""
+  elseif type(var) ~= "table" then
+    return tostring(var)
+  else
+    local ret = "{"
+    local ts = {}
+    local ti = {}
+    for i, v in pairs(var) do
+      if type(i) == "string" then
+        table.insert(ts, i)
+      else
+        table.insert(ti, i)
+      end
+    end
+    table.sort(ti)
+    table.sort(ts)
+    
+    local comma = ""
+    if #ti >= 1 then
+      for i, v in ipairs(ti) do
+        ret = ret .. comma .. varToString(var[v])
+        comma = ", "
+      end
+    end
+    
+    if #ts >= 1 then
+      for i, v in ipairs(ts) do
+        ret = ret .. comma .. "" .. v .. " = " .. varToString(var[v])
+        comma = ", \n"
+      end
+    end
+    
+    return ret .. "}"
+  end
+end
+
+function love.keypressed(k)
+	if k == "space" then 
+		shaders.selected = shaders.selected + 1
+		shaders.selected = (shaders.selected-1) % #shaders.fileName+1
+	end
 end
