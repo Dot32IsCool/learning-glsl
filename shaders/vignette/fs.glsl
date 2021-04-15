@@ -1,4 +1,4 @@
-	extern vec2 size;
+	uniform vec2 size;
 
 	const vec3 acolour = vec3(0.3, 0.4, 0.5);
 	const vec3 bcolour = vec3(1.0, 1.0, 1.0);
