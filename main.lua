@@ -20,8 +20,8 @@ function love.load()
 	car.dirNormalised = math.fmod(car.dir, 360)
 	car.vDir = -90
 
-	shaders.selected = 2
 	shaders.fileName = love.filesystem.getDirectoryItems("shaders")
+	shaders.selected = #shaders.fileName
 	shaders.out = {}
 	shaders.read = {}
 	shaders.draw = {}
@@ -108,7 +108,7 @@ function love.draw()
 	--love.graphics.print(varToString(shaders), 10, 50)
 
 	love.graphics.circle("fill", shaders.out[1].lights[1].position[1](), 0, 5)
-	love.graphics.print(shaders.selected, love.graphics.getWidth()-screen.font:getWidth(shaders.selected) - 10, love.graphics.getHeight()-screen.font:getHeight()-10)
+	love.graphics.print(shaders.fileName[shaders.selected], love.graphics.getWidth()-screen.font:getWidth(shaders.fileName[shaders.selected]) - 10, love.graphics.getHeight()-screen.font:getHeight()-10)
 	
 	
 	love.graphics.setColour(1,0,0,0.25)
